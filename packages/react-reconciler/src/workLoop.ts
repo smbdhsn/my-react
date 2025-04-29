@@ -1,5 +1,5 @@
 import { beginWork } from './beginWork';
-import { commitMutationEffects } from './commitWorks';
+import { commitMutationEffects } from './commitWork';
 import { completeWork } from './completeWork';
 import { createWorkInProgress, FiberNode, FiberRootNode } from './fiber';
 import { MutationMask, NoFlags } from './fiberFlags';

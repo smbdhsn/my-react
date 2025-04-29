@@ -4,8 +4,18 @@ import {
 	createTextInstance
 } from 'hostConfig';
 import { FiberNode } from './fiber';
-import { HostComponent, HostRoot, HostText } from './workTags';
-import { NoFlags } from './fiberFlags';
+import {
+	FunctionComponent,
+	HostComponent,
+	HostRoot,
+	HostText
+} from './workTags';
+import { NoFlags, Update } from './fiberFlags';
+import { updateFiberProps } from 'react-dom/src/SyntheticEvent';
+
+function markUpdate(fiber: FiberNode) {
+	fiber.flags |= Update;
+}
 
 export const completeWork = (wip: FiberNode) => {
 	// 递归 归阶段
@@ -17,6 +27,7 @@ export const completeWork = (wip: FiberNode) => {
 		case HostComponent:
 			if (current !== null && wip.stateNode) {
 				// update
+				updateFiberProps(wip.stateNode, newProps);
 			} else {
 				// 1.构建DOM
 				const instance = createInstance(wip.type, newProps);
@@ -29,6 +40,11 @@ export const completeWork = (wip: FiberNode) => {
 		case HostText:
 			if (current !== null && wip.stateNode) {
 				// update
+				const oldText = current.memorizedProps.content;
+				const newText = newProps.content;
+				if (oldText !== newText) {
+					markUpdate(wip);
+				}
 			} else {
 				// 1.构建DOM
 				const instance = createTextInstance(newProps.content);
@@ -39,6 +55,14 @@ export const completeWork = (wip: FiberNode) => {
 		case HostRoot:
 			bubbleProperties(wip);
 			return null;
+		case FunctionComponent:
+			bubbleProperties(wip);
+			return null;
+		default:
+			if (__DEV__) {
+				console.warn('未处理的completeWork情况', wip);
+			}
+			break;
 	}
 };
 
