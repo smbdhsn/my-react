@@ -1,4 +1,4 @@
-import { React_ELEMENT_TYPE } from 'shared/ReactSymbols';
+import { React_ELEMENT_TYPE, React_FRAGMENT_TYPE } from 'shared/ReactSymbols';
 import type {
 	Type,
 	Key,
@@ -56,3 +56,4 @@ export const jsx = (type: ElementType, config: any, jsxKey: string) => {
 };
 
 export const jsxDEV = jsx;
+export const Fragment = React_FRAGMENT_TYPE;

@@ -1,22 +1,25 @@
-import ReactDOM from 'react-dom/client'
-import { useState } from 'react';
-
-function App() {
-  const [num, setNum] = useState(100);
-
-  const arr = num % 2 === 0 
-    ? [<li key="1">1</li>, <li key="2">2</li>, <li key="3">3</li>]
-    : [<li key="3">3</li>, <li key="2">2</li>, <li key="1">1</li>]
-
-  return <ul onClick={() => setNum(pre => pre + 1)}>
-    {arr}
-  </ul>
-}
-
-function Child() {
-  return <span>big-react</span>
-}
-
-ReactDOM.createRoot(document.getElementById('root')!).render(
-  <App />
-)
+import { useState, useEffect, useRef } from 'react';
+import ReactDOM from 'react-dom';
+ 
+ function App() {
+ 	const [isDel, del] = useState(false);
+ 	const divRef = useRef(null);
+ 
+ 	console.warn('render divRef', divRef.current);
+ 
+ 	useEffect(() => {
+ 		console.warn('useEffect divRef', divRef.current);
+ 	}, []);
+ 
+ 	return (
+ 		<div ref={divRef} onClick={() => del(true)}>
+ 			{isDel ? null : <Child />}
+ 		</div>
+ 	);
+ }
+ 
+ function Child() {
+ 	return <p ref={(dom) => console.warn('dom is:', dom)}>Child</p>;
+ }
+ 
+ ReactDOM.createRoot(document.getElementById('root') as HTMLElement).render(<App />);

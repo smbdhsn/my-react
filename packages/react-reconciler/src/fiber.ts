@@ -1,7 +1,15 @@
 import { Props, Key, Ref, ReactElement } from 'shared/ReactTypes';
-import { FunctionComponent, HostComponent, WorkTag } from './workTags';
+import {
+	Fragment,
+	FunctionComponent,
+	HostComponent,
+	WorkTag
+} from './workTags';
 import { Flags, NoFlags } from './fiberFlags';
 import { Container } from 'hostConfig';
+import { Lane, Lanes, NoLane, NoLanes } from './fiberLanes';
+import { Effect } from './fiberHooks';
+import { CallbackNode } from 'scheduler';
 
 export class FiberNode {
 	type: any;
@@ -9,7 +17,7 @@ export class FiberNode {
 	pendingProps: Props;
 	key: Key;
 	stateNode: any;
-	ref: Ref;
+	ref: Ref | null;
 
 	return: FiberNode | null;
 	sibling: FiberNode | null;
@@ -24,10 +32,13 @@ export class FiberNode {
 	updateQueue: any;
 	deletions: FiberNode[] | null;
 
+	lanes: Lanes;
+	childLanes: Lanes;
+
 	constructor(tag: WorkTag, pendingProps: Props, key: Key) {
 		// 实例
 		this.tag = tag;
-		this.key = key;
+		this.key = key || null;
 		this.stateNode = null;
 		this.type = null;
 
@@ -49,19 +60,43 @@ export class FiberNode {
 		this.flags = NoFlags;
 		this.subtreeFlags = NoFlags;
 		this.deletions = null;
+		// bailout逻辑
+		this.lanes = NoLanes;
+		this.childLanes = NoLanes;
 	}
+}
+
+export interface PendingPassiveEffects {
+	unmount: Effect[];
+	update: Effect[];
 }
 
 export class FiberRootNode {
 	container: Container;
 	current: FiberNode;
 	finishedWork: FiberNode | null;
+	pendingLanes: Lanes;
+	finishedLane: Lane;
+	pendingPassiveEffects: PendingPassiveEffects;
+
+	callbackNode: CallbackNode | null;
+	callbackPriority: Lane;
 
 	constructor(container: Container, hostRootFiber: FiberNode) {
 		this.container = container;
 		this.current = hostRootFiber;
 		hostRootFiber.stateNode = this;
 		this.finishedWork = null;
+		this.pendingLanes = NoLanes;
+		this.finishedLane = NoLane;
+
+		this.callbackNode = null;
+		this.callbackPriority = NoLane;
+
+		this.pendingPassiveEffects = {
+			unmount: [],
+			update: []
+		};
 	}
 }
 
@@ -92,12 +127,16 @@ export const createWorkInProgress = (
 	wip.child = current.child;
 	wip.memorizedProps = current.memorizedProps;
 	wip.memorizedState = current.memorizedState;
+	wip.ref = current.ref;
+
+	wip.lanes = current.lanes;
+	wip.childLanes = current.childLanes;
 
 	return wip;
 };
 
 export function createFiberFromElement(element: ReactElement) {
-	const { type, key, props } = element;
+	const { type, key, props, ref } = element;
 	let fiberTag: WorkTag = FunctionComponent;
 
 	if (typeof type === 'string') {
@@ -108,5 +147,11 @@ export function createFiberFromElement(element: ReactElement) {
 	}
 	const fiber = new FiberNode(fiberTag, props, key);
 	fiber.type = type;
+	fiber.ref = ref;
+	return fiber;
+}
+
+export function createFiberFromFragment(elements: any[], key: Key): FiberNode {
+	const fiber = new FiberNode(Fragment, elements, key);
 	return fiber;
 }
